@@ -1,0 +1,96 @@
+﻿@*@rendermode InteractiveServer*@
+@page "/workoutrecords"
+@attribute [StreamRendering(true)]
+@attribute [OutputCache(Duration = 5)]
+
+@inject WorkoutRecordsApiClient WorkoutRecordsApi
+
+<PageTitle>健身记录</PageTitle>
+
+<h1>健身记录</h1>
+
+@if (workoutRecords == null)
+{
+    <p><em>加载中……如果太久可能是出问题了</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>用户</th>
+                <th>描述</th>
+                <th>创建日期</th>
+                <th>更新日期</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <input @bind="newUser" @onblur="AddNewRecord" class="form-control" placeholder="输入用户名" />
+                </td>
+                <td>
+                    <input @bind="newDescription" @onblur="AddNewRecord" class="form-control" placeholder="输入描述" />
+                </td>
+                <td></td>
+                <td></td>
+            </tr>
+            @foreach (var record in workoutRecords.OrderByDescending(r => r.Id))
+            {
+                <tr>
+                    <td>
+                        <input @bind="record.User" @onblur="() => UpdateRecord(record)" class="form-control" />
+                    </td>
+                    <td>
+                        <input @bind="record.Description" @onblur="() => UpdateRecord(record)" class="form-control" />
+                    </td>
+                    <td>@record.DateCreated.ToShortDateString()</td>
+                    <td>@record.DateUpdated.ToShortDateString()</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private WorkoutRecord[]? workoutRecords;
+    private string newUser = string.Empty;
+    private string newDescription = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadWorkoutRecords();
+    }
+
+    private async Task LoadWorkoutRecords()
+    {
+        workoutRecords = await WorkoutRecordsApi.GetWorkoutRecordsAsync();
+    }
+
+    private async Task UpdateRecord(WorkoutRecord record)
+    {
+        if (!string.IsNullOrEmpty(record.Description) && !string.IsNullOrEmpty(record.User))
+        {
+            var success = await WorkoutRecordsApi.UpdateWorkoutRecordAsync(record.Id, record);
+            if (success)
+            {
+                await LoadWorkoutRecords();
+            }
+        }
+    }
+
+    private async Task AddNewRecord()
+    {
+        if (!string.IsNullOrEmpty(newUser) && !string.IsNullOrEmpty(newDescription))
+        {
+            var newRecord = new WorkoutRecord(0, newUser, newDescription, DateTime.Now, DateTime.Now);
+            var createdRecord = await WorkoutRecordsApi.CreateWorkoutRecordAsync(newRecord);
+            if (createdRecord != null)
+            {
+                newUser = string.Empty;
+                newDescription = string.Empty;
+                await LoadWorkoutRecords();
+            }
+        }
+    }
+}
