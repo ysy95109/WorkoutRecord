@@ -1,9 +1,10 @@
-﻿@*@rendermode InteractiveServer*@
-@page "/workoutrecords"
+﻿@page "/workoutrecords"
+@attribute [Authorize]
 @attribute [StreamRendering(true)]
 @attribute [OutputCache(Duration = 5)]
 
 @inject WorkoutRecordsApiClient WorkoutRecordsApi
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>健身记录</PageTitle>
 
@@ -38,11 +39,16 @@ else
             @foreach (var record in workoutRecords.OrderByDescending(r => r.Id))
             {
                 <tr>
+                    <td>@record.User</td>
                     <td>
-                        <input @bind="record.User" @onblur="() => UpdateRecord(record)" class="form-control" />
-                    </td>
-                    <td>
-                        <input @bind="record.Description" @onblur="() => UpdateRecord(record)" class="form-control" />
+                        @if (record.User == currentUserName)
+                        {
+                            <input @bind="record.Description" @onblur="() => UpdateRecord(record)" class="form-control" />
+                        }
+                        else
+                        {
+                            <span>@record.Description</span>
+                        }
                     </td>
                     <td>@record.DateCreated.ToShortDateString()</td>
                     <td>@record.DateUpdated.ToShortDateString()</td>
@@ -56,10 +62,26 @@ else
     private WorkoutRecord[]? workoutRecords;
     private string newUser = string.Empty;
     private string newDescription = string.Empty;
+    private string? currentUserName;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await LoadWorkoutRecords();
+        if (firstRender)
+        {
+            ((ApiAuthenticationStateProvider)AuthStateProvider).SetInitialized();
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                currentUserName = user.Identity.Name;
+            }
+
+            await LoadWorkoutRecords();
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
     }
 
     private async Task LoadWorkoutRecords()

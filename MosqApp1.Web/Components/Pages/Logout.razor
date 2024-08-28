@@ -1,0 +1,20 @@
+﻿@page "/logout"
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>退出登录</PageTitle>
+
+<h3>正在退出登录</h3>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await ((ApiAuthenticationStateProvider)AuthStateProvider).MarkUserAsLoggedOut();
+            Navigation.NavigateTo("/login");
+        }
+        
+        await base.OnAfterRenderAsync(firstRender);
+    }
+}
