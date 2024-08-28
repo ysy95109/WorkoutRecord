@@ -78,10 +78,11 @@ public class WorkoutRecordsApiClient(HttpClient httpClient)
 }
 
 // Record class definition
-public record WorkoutRecord(int Id, string User, string Description, DateTime DateCreated, DateTime DateUpdated)
+public record WorkoutRecord(int Id, string UserId, string UserDisplayName, string Description, DateTime DateCreated, DateTime DateUpdated)
 {
     public int Id { get; set; } = Id;
-    public string User { get; set; } = User;
+    public string UserId { get; set; } = UserId;
+    public string UserDisplayName { get; set; } = UserDisplayName;
     public string Description { get; set; } = Description;
     public DateTime DateCreated { get; set; } = DateCreated;
     public DateTime DateUpdated { get; set; } = DateUpdated;

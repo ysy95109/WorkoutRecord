@@ -85,6 +85,7 @@ app.MapGet("/workoutrecords/{id}", async (int id, WorkoutRecordsDbContext db) =>
 app.MapPost("/workoutrecords", async (WorkoutRecord record, WorkoutRecordsDbContext db, HttpContext httpContext) =>
 {
     record.UserId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+    record.UserDisplayName = httpContext.User.FindFirstValue("DisplayName");
     db.WorkoutRecords.Add(record);
     await db.SaveChangesAsync();
     return Results.Created($"/workoutrecords/{record.Id}", record);
@@ -158,7 +159,7 @@ app.MapPost("/login", async (LoginModel model, SignInManager<ApplicationUser> si
     return Results.Unauthorized();
 });
 
-app.MapGet("/userinfo", [Authorize] (HttpContext httpContext) =>
+app.MapGet("/userinfo", (HttpContext httpContext) =>
 {
     var userClaims = httpContext.User.Claims;
 
@@ -166,12 +167,13 @@ app.MapGet("/userinfo", [Authorize] (HttpContext httpContext) =>
     {
         Username = userClaims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value,
         DisplayName = userClaims.FirstOrDefault(c => c.Type == "DisplayName")?.Value,
+        UserId = userClaims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value,
         Roles = userClaims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList()
     };
 
     // Return the user info as JSON
     return Results.Ok(userInfo);
-});
+}).RequireAuthorization();
 
 app.MapDefaultEndpoints();
 #endregion

@@ -1,4 +1,5 @@
 ﻿@page "/workoutrecords"
+@using System.Security.Claims
 @attribute [Authorize]
 @attribute [StreamRendering(true)]
 @attribute [OutputCache(Duration = 5)]
@@ -21,27 +22,28 @@ else
             <tr>
                 <th>用户</th>
                 <th>描述</th>
-                <th>创建日期</th>
-                <th>更新日期</th>
+                @* <th>创建日期</th>
+                <th>更新日期</th> *@
             </tr>
         </thead>
         <tbody>
             <tr>
                 <td>
-                    <input @bind="newUser" @onblur="AddNewRecord" class="form-control" placeholder="输入用户名" />
+                    <span>*新记录</span>
                 </td>
                 <td>
                     <input @bind="newDescription" @onblur="AddNewRecord" class="form-control" placeholder="输入描述" />
                 </td>
-                <td></td>
-                <td></td>
+                @* <td></td>
+                <td></td> *@
             </tr>
+            
             @foreach (var record in workoutRecords.OrderByDescending(r => r.Id))
             {
                 <tr>
-                    <td>@record.User</td>
+                    <td>@record.UserDisplayName</td>
                     <td>
-                        @if (record.User == currentUserName)
+                        @if (record.UserId == currentUserId)
                         {
                             <input @bind="record.Description" @onblur="() => UpdateRecord(record)" class="form-control" />
                         }
@@ -50,8 +52,8 @@ else
                             <span>@record.Description</span>
                         }
                     </td>
-                    <td>@record.DateCreated.ToShortDateString()</td>
-                    <td>@record.DateUpdated.ToShortDateString()</td>
+                    @* <td>@record.DateCreated.ToShortDateString()</td>
+                    <td>@record.DateUpdated.ToShortDateString()</td> *@
                 </tr>
             }
         </tbody>
@@ -60,9 +62,15 @@ else
 
 @code {
     private WorkoutRecord[]? workoutRecords;
-    private string newUser = string.Empty;
     private string newDescription = string.Empty;
     private string? currentUserName;
+    private string? currentUserId;
+    private string? currentUserDisplayName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -75,6 +83,8 @@ else
             if (user.Identity?.IsAuthenticated == true)
             {
                 currentUserName = user.Identity.Name;
+                currentUserId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+                currentUserDisplayName = user.FindFirstValue("DisplayName");
             }
 
             await LoadWorkoutRecords();
@@ -91,7 +101,7 @@ else
 
     private async Task UpdateRecord(WorkoutRecord record)
     {
-        if (!string.IsNullOrEmpty(record.Description) && !string.IsNullOrEmpty(record.User))
+        if (!string.IsNullOrEmpty(record.Description) && !string.IsNullOrEmpty(record.UserId))
         {
             var success = await WorkoutRecordsApi.UpdateWorkoutRecordAsync(record.Id, record);
             if (success)
@@ -103,16 +113,16 @@ else
 
     private async Task AddNewRecord()
     {
-        if (!string.IsNullOrEmpty(newUser) && !string.IsNullOrEmpty(newDescription))
+        if (!string.IsNullOrEmpty(newDescription))
         {
-            var newRecord = new WorkoutRecord(0, newUser, newDescription, DateTime.Now, DateTime.Now);
+            var newRecord = new WorkoutRecord(0, currentUserId, currentUserDisplayName, newDescription, DateTime.Now, DateTime.Now);
             var createdRecord = await WorkoutRecordsApi.CreateWorkoutRecordAsync(newRecord);
-            if (createdRecord != null)
-            {
-                newUser = string.Empty;
-                newDescription = string.Empty;
-                await LoadWorkoutRecords();
-            }
+
+            if (createdRecord == null)
+                return;
+            newDescription = string.Empty;
+            await LoadWorkoutRecords();
+            
         }
     }
 }

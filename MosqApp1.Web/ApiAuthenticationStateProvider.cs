@@ -37,7 +37,8 @@
             var identity = new ClaimsIdentity(
             [
             new Claim(ClaimTypes.Name, userInfo.Username),
-            new Claim("DisplayName", userInfo.DisplayName)
+            new Claim("DisplayName", userInfo.DisplayName),
+            new Claim(ClaimTypes.NameIdentifier, userInfo.UserId)
         ], "apiauth");
 
             var user = new ClaimsPrincipal(identity);
@@ -66,8 +67,9 @@
         }
     }
 
-    public class UserInfo
+    public record UserInfo
     {
+        public string UserId {  get; set; }
         public string Username { get; set; }
         public string DisplayName { get; set; }
     }
