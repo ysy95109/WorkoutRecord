@@ -1,0 +1,88 @@
+﻿@page "/login"
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+@inject WorkoutRecordsApiClient WorkoutRecordsApi
+
+<PageTitle>用户登录</PageTitle>
+
+<h3>用户登录</h3>
+
+@if (!string.IsNullOrEmpty(loginError))
+{
+    <div class="alert alert-info">
+        @loginError
+        @*<button class="btn-link" @onclick="NavigateToRegister">注册新账号</button>*@
+    </div>
+}
+
+<EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="username">用户名</label>
+        <InputText id="username" class="form-control" @bind-Value="loginModel.Username" />
+    </div>
+
+    <div class="form-group">
+        <label for="password">密码</label>
+        <InputText id="password" type="password" class="form-control" @bind-Value="loginModel.Password" />
+    </div>
+    <br />
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">登录</button>
+        <button type="button" class="btn btn-secondary ml-3" @onclick="NavigateToRegister">注册</button>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter] public string? ReturnUrl { get; set; }
+    private LoginModel loginModel = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            ((ApiAuthenticationStateProvider)AuthStateProvider).SetInitialized();
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                Navigation.NavigateTo(string.IsNullOrEmpty(ReturnUrl) ? "/workoutrecords" : ReturnUrl);
+            }
+
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private string? loginError;
+
+    private async Task HandleLogin()
+    {
+        var response = await WorkoutRecordsApi.RequestLogin(loginModel);
+        if (response.IsSuccessStatusCode)
+        {
+            var token = await response.Content.ReadAsStringAsync();
+            await ((ApiAuthenticationStateProvider)AuthStateProvider).MarkUserAsAuthenticated(token);
+            Navigation.NavigateTo(string.IsNullOrEmpty(ReturnUrl) ? "/workoutrecords" : ReturnUrl);
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            // Handle login error for 401 Unauthorized
+            loginError = "登录失败，请检查您的用户名和密码。如果您没有账号，请点击下方按钮注册新账号。";
+        }
+        else
+        {
+            // Handle other errors
+            loginError = "登录时发生错误，请稍后再试。";
+        }
+    }
+
+    private void NavigateToRegister()
+    {
+        Navigation.NavigateTo("/register");
+    }
+}

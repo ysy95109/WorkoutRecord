@@ -1,0 +1,49 @@
+﻿@page "/register"
+@inject NavigationManager Navigation
+@inject WorkoutRecordsApiClient WorkoutRecordsApi
+
+
+<PageTitle>新用户注册</PageTitle>
+
+<h3>新用户注册</h3>
+
+<EditForm Model="registerModel" OnValidSubmit="HandleRegistration">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="username">用户名（登录用，不可更改）</label>
+        <InputText id="username" class="form-control" @bind-Value="registerModel.Username" />
+    </div>
+
+    <div class="form-group">
+        <label for="displayName">昵称（可以更改）</label>
+        <InputText id="displayName" class="form-control" @bind-Value="registerModel.DisplayName" />
+    </div>
+    <br/>
+
+    <div class="form-group">
+        <label for="password">密码（6位以上，不能全是同一字符）</label>
+        <InputText id="password" type="password" class="form-control" @bind-Value="registerModel.Password" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">注册</button>
+</EditForm>
+
+@code {
+    private RegisterModel registerModel = new();
+
+    private async Task HandleRegistration()
+    {
+        var response = await WorkoutRecordsApi.RequestRegistration(registerModel);
+        if (response.IsSuccessStatusCode)
+        {
+            Navigation.NavigateTo("/login");
+        }
+        else
+        {
+            // Handle registration error
+        }
+    }
+
+}

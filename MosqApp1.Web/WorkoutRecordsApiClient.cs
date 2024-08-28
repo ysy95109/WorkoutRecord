@@ -1,3 +1,5 @@
+using System.Net.Http.Headers;
+
 namespace MosqApp1.Web;
 
 public class WorkoutRecordsApiClient(HttpClient httpClient)
@@ -56,6 +58,23 @@ public class WorkoutRecordsApiClient(HttpClient httpClient)
         var response = await httpClient.DeleteAsync($"/workoutrecords/{id}", cancellationToken);
         return response.IsSuccessStatusCode;
     }
+
+    public async Task<HttpResponseMessage> RequestLogin(LoginModel loginModel)
+    {
+        return await httpClient.PostAsJsonAsync("/login", loginModel);
+    }
+
+    public async Task<HttpResponseMessage> RequestRegistration(RegisterModel registerModel)
+    {
+        return await httpClient.PostAsJsonAsync("/register", registerModel);
+    }
+
+    public async Task<HttpResponseMessage> RequestUserInfo(string token)
+    {
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        return await httpClient.GetAsync("userinfo");
+    }
 }
 
 // Record class definition
@@ -68,3 +87,15 @@ public record WorkoutRecord(int Id, string User, string Description, DateTime Da
     public DateTime DateUpdated { get; set; } = DateUpdated;
 }
 
+public class LoginModel
+{
+    public string Username { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+}
+
+public class RegisterModel
+{
+    public string Username { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+}
