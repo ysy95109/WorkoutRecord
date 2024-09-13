@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -17,8 +16,9 @@ builder.AddServiceDefaults();
 
 // Add services to the container.
 builder.Services.AddProblemDetails();
+var dbPath = Path.Combine(Environment.CurrentDirectory, "data/workoutRecords.db");
 builder.Services.AddDbContext<WorkoutRecordsDbContext>(options =>
-    options.UseSqlite("Data Source=workoutRecords.db"));
+    options.UseSqlite($"Data Source={dbPath}"));
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
 builder.Services.AddSingleton(jwtSettings);
@@ -179,17 +179,18 @@ app.MapDefaultEndpoints();
 #endregion
 
 // Apply database migrations and run the app
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<WorkoutRecordsDbContext>();
-    dbContext.Database.Migrate();
-}
+using var scope = app.Services.CreateScope();
+var dbContext = scope.ServiceProvider.GetRequiredService<WorkoutRecordsDbContext>();
+dbContext.Database.Migrate();
 
 app.Run();
 
+#region Records
 public record RegisterModel(string Username, string DisplayName, string Password);
 public record LoginModel(string Username, string Password);
 public record JwtSettings(string Issuer, string Audience, string SecretKey);
+#endregion
+
 internal class AdditionalUserClaimsPrincipalFactory(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IOptions<IdentityOptions> options) : UserClaimsPrincipalFactory<ApplicationUser, IdentityRole>(userManager, roleManager, options)
 {
     public async override Task<ClaimsPrincipal> CreateAsync(ApplicationUser user)

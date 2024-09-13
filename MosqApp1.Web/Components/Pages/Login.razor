@@ -38,19 +38,45 @@
 @code {
     [Parameter] public string? ReturnUrl { get; set; }
     private LoginModel loginModel = new();
+    //private AuthenticationState? AuthState;
+
+    // protected override async Task OnInitializedAsync()
+    // {
+        
+
+    //     await base.OnInitializedAsync();
+    // }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo(string.IsNullOrEmpty(ReturnUrl) ? "/workoutrecords" : ReturnUrl);
+        }
+        
+        await base.OnParametersSetAsync();
+    }
+
+    // protected override bool ShouldRender()
+    // {
+    //     return AuthState == null || AuthState.User.Identity == null || !AuthState.User.Identity.IsAuthenticated;
+    // }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             ((ApiAuthenticationStateProvider)AuthStateProvider).SetInitialized();
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
+            // var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            // var user = authState.User;
 
-            if (user.Identity?.IsAuthenticated == true)
-            {
-                Navigation.NavigateTo(string.IsNullOrEmpty(ReturnUrl) ? "/workoutrecords" : ReturnUrl);
-            }
+            // if (user.Identity?.IsAuthenticated == true)
+            // {
+            //     Navigation.NavigateTo(string.IsNullOrEmpty(ReturnUrl) ? "/workoutrecords" : ReturnUrl);
+            // }
 
             StateHasChanged();
         }

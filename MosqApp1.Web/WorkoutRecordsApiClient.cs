@@ -73,7 +73,7 @@ public class WorkoutRecordsApiClient(HttpClient httpClient)
     {
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        return await httpClient.GetAsync("userinfo");
+        return await httpClient.GetAsync("/userinfo");
     }
 }
 
